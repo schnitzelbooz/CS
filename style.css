@@ -1,0 +1,42 @@
+body {
+  font-family: Arial, sans-serif;
+  text-align: center;
+  margin-top: 40px;
+}
+
+button {
+  margin: 5px;
+  padding: 10px 20px;
+  font-size: 16px;
+  border-radius: 8px;
+  border: none;
+  background-color: #4CAF50;
+  color: white;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #45a049;
+}
+
+#output {
+  margin: 20px;
+  font-size: 20px;
+  font-weight: bold;
+}
+
+#history {
+  margin-top: 20px;
+  list-style: none;
+  padding: 0;
+}
+
+#history li {
+  background: #f1f1f1;
+  margin: 5px auto;
+  padding: 8px;
+  border-radius: 6px;
+  width: 60%;
+  text-align: left;
+  font-size: 14px;
+}
