@@ -3,6 +3,22 @@
 <head>
   <title>Cafeteria Congestion Logger</title>
   <link rel="stylesheet" href="style.css">
+   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+<script>
+  // Your Firebase config here
+  const firebaseConfig = {
+    apiKey: "AIzaSyDqA1Mv9y9kRIKUrLogYWbce7s0XOMZZzs",
+    authDomain: "cs-ia-34d20.firebaseapp.com",
+    databaseURL: "https://cs-ia-34d20-default-rtdb.asia-southeast1.firebasedatabase.app/",
+    projectId: "cs-ia-34d20",
+    storageBucket: "cs-ia-34d20.firebasestorage.app",
+    messagingSenderId: "642695626575",
+    appId: "1:642695626575:web:94f5f4a35631354e7acf3a"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+</script>
 </head>
 <body onload="showData()">
   <h1>Cafeteria Congestion Displayer</h1>
@@ -11,11 +27,14 @@
   
   <button onclick="increase()">Enter</button>
   <button onclick="decrease()">Exit</button>
-  <button onclick="reset()">Reset</button>
+  <!-- <button onclick="reset()">Reset</button> -->
 
-  <h2>History Log</h2>
+  <h2>History</h2>
   <ul id="history"></ul>
-  
+
+  <!-- <img src="lol.jpg" alt="Cafeteria Image" width="300">
+  <img src="lol1.jpg" alt="Funny Image" width="300"> -->
+ 
   <script src="script.js"></script>
 </body>
 </html>

@@ -1,5 +1,5 @@
 body {
-  font-family: Arial, sans-serif;
+  font-family:  'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   text-align: center;
   margin-top: 40px;
 }
@@ -10,13 +10,9 @@ button {
   font-size: 16px;
   border-radius: 8px;
   border: none;
-  background-color: #4CAF50;
+  background-color: #af4c4c;
   color: white;
   cursor: pointer;
-}
-
-button:hover {
-  background-color: #45a049;
 }
 
 #output {
