@@ -39,7 +39,8 @@ async function registerDevice() {
       firstSeen: now,
       lastSeen: now,
       userAgent: navigator.userAgent || 'unknown',
-      visits: 1
+      visits: 1,
+      hasActed: false
     });
   } else {
     const data = snapshot.val() || {};
@@ -66,12 +67,21 @@ function saveHistory(history) {
 async function addHistory(action, newCount) {
   const timestamp = new Date().toLocaleString();
   const deviceId = getOrCreateDeviceId();
-  const entry = { action: action, count: newCount, time: timestamp, deviceId: deviceId };
+  const entry = { action: action, count: newCount, time: timestamp, deviceId: deviceId, ts: Date.now() };
   // append instead of overwriting entire array to avoid races
   await db.ref("cafeteriaHistory").push(entry);
 }
 async function increase() {
   try {
+    // block if device already acted
+    const deviceId = getOrCreateDeviceId();
+    const deviceRef = db.ref('devices/' + deviceId);
+    const devSnap = await deviceRef.get();
+    if (devSnap.exists() && devSnap.val() && devSnap.val().hasActed) {
+      alert('You have already performed an action on this device.');
+      setButtonsEnabled(false);
+      return;
+    }
     const ref = db.ref("cafeteriaCount");
     const result = await ref.transaction(function(current) {
       return (typeof current === 'number' ? current : 0) + 1;
@@ -79,6 +89,8 @@ async function increase() {
     if (result.committed) {
       const newCount = result.snapshot.val() || 0;
       await addHistory("Entered", newCount);
+      await deviceRef.update({ hasActed: true });
+      setButtonsEnabled(false);
     }
   } catch (e) {
     console.error('Increase failed:', e);
@@ -87,6 +99,15 @@ async function increase() {
 }
 async function decrease() {
   try {
+    // block if device already acted
+    const deviceId = getOrCreateDeviceId();
+    const deviceRef = db.ref('devices/' + deviceId);
+    const devSnap = await deviceRef.get();
+    if (devSnap.exists() && devSnap.val() && devSnap.val().hasActed) {
+      alert('You have already performed an action on this device.');
+      setButtonsEnabled(false);
+      return;
+    }
     const ref = db.ref("cafeteriaCount");
     const result = await ref.transaction(function(current) {
       const value = (typeof current === 'number' ? current : 0);
@@ -95,6 +116,8 @@ async function decrease() {
     if (result.committed) {
       const newCount = result.snapshot.val() || 0;
       await addHistory("Exited", newCount);
+      await deviceRef.update({ hasActed: true });
+      setButtonsEnabled(false);
     }
   } catch (e) {
     console.error('Decrease failed:', e);
@@ -146,11 +169,31 @@ function renderHistory(history) {
   if (!historyList) return;
   historyList.innerHTML = "";
   var items = Array.isArray(history) ? history : (history && typeof history === 'object' ? Object.values(history) : []);
+  // sort newest first using numeric ts; fallback keeps original order
+  items.sort(function(a, b) {
+    var ta = a && typeof a.ts === 'number' ? a.ts : 0;
+    var tb = b && typeof b.ts === 'number' ? b.ts : 0;
+    return tb - ta;
+  });
   items.forEach(function(entry) {
     if (!entry) return;
     var li = document.createElement("li");
     li.innerText = `${entry.time}: ${entry.action} → ${entry.count} people`;
     historyList.appendChild(li);
+  });
+}
+
+function setButtonsEnabled(enabled) {
+  var buttons = document.querySelectorAll('button');
+  buttons.forEach(function(btn) {
+    btn.disabled = !enabled;
+    if (!enabled) {
+      btn.style.opacity = '0.6';
+      btn.style.cursor = 'not-allowed';
+    } else {
+      btn.style.opacity = '';
+      btn.style.cursor = '';
+    }
   });
 }
 
