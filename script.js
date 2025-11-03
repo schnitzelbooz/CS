@@ -64,25 +64,42 @@ function saveHistory(history) {
   return db.ref("cafeteriaHistory").set(history);
 }
 async function addHistory(action, newCount) {
-  let history = await loadHistory();
-  let timestamp = new Date().toLocaleString();
+  const timestamp = new Date().toLocaleString();
   const deviceId = getOrCreateDeviceId();
-  history.push({ action: action, count: newCount, time: timestamp, deviceId: deviceId });
-  await saveHistory(history);
+  const entry = { action: action, count: newCount, time: timestamp, deviceId: deviceId };
+  // append instead of overwriting entire array to avoid races
+  await db.ref("cafeteriaHistory").push(entry);
 }
 async function increase() {
-  let count = await loadData();
-  count++;
-  await saveData(count);
-  await addHistory("Entered", count);
-  showData();
+  try {
+    const ref = db.ref("cafeteriaCount");
+    const result = await ref.transaction(function(current) {
+      return (typeof current === 'number' ? current : 0) + 1;
+    });
+    if (result.committed) {
+      const newCount = result.snapshot.val() || 0;
+      await addHistory("Entered", newCount);
+    }
+  } catch (e) {
+    console.error('Increase failed:', e);
+    alert('Failed to increase count. Check console for details.');
+  }
 }
 async function decrease() {
-  let count = await loadData();
-  if (count > 0) count--;
-  await saveData(count);
-  await addHistory("Exited", count);
-  showData();
+  try {
+    const ref = db.ref("cafeteriaCount");
+    const result = await ref.transaction(function(current) {
+      const value = (typeof current === 'number' ? current : 0);
+      return value > 0 ? value - 1 : 0;
+    });
+    if (result.committed) {
+      const newCount = result.snapshot.val() || 0;
+      await addHistory("Exited", newCount);
+    }
+  } catch (e) {
+    console.error('Decrease failed:', e);
+    alert('Failed to decrease count. Check console for details.');
+  }
 }
 async function showData() {
   let count = await loadData();
