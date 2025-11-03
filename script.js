@@ -40,7 +40,7 @@ async function registerDevice() {
       lastSeen: now,
       userAgent: navigator.userAgent || 'unknown',
       visits: 1,
-      hasActed: false
+      status: 'out'
     });
   } else {
     const data = snapshot.val() || {};
@@ -73,13 +73,13 @@ async function addHistory(action, newCount) {
 }
 async function increase() {
   try {
-    // block if device already acted
     const deviceId = getOrCreateDeviceId();
     const deviceRef = db.ref('devices/' + deviceId);
     const devSnap = await deviceRef.get();
-    if (devSnap.exists() && devSnap.val() && devSnap.val().hasActed) {
-      alert('You have already performed an action on this device.');
-      setButtonsEnabled(false);
+    var currentStatus = devSnap.exists() && devSnap.val() && devSnap.val().status ? devSnap.val().status : 'out';
+    if (currentStatus === 'in') {
+      alert('You are already IN. Use Exit instead.');
+      updateButtonsForStatus('in');
       return;
     }
     const ref = db.ref("cafeteriaCount");
@@ -89,8 +89,8 @@ async function increase() {
     if (result.committed) {
       const newCount = result.snapshot.val() || 0;
       await addHistory("Entered", newCount);
-      await deviceRef.update({ hasActed: true });
-      setButtonsEnabled(false);
+      await deviceRef.update({ status: 'in' });
+      updateButtonsForStatus('in');
     }
   } catch (e) {
     console.error('Increase failed:', e);
@@ -99,13 +99,13 @@ async function increase() {
 }
 async function decrease() {
   try {
-    // block if device already acted
     const deviceId = getOrCreateDeviceId();
     const deviceRef = db.ref('devices/' + deviceId);
     const devSnap = await deviceRef.get();
-    if (devSnap.exists() && devSnap.val() && devSnap.val().hasActed) {
-      alert('You have already performed an action on this device.');
-      setButtonsEnabled(false);
+    var currentStatus = devSnap.exists() && devSnap.val() && devSnap.val().status ? devSnap.val().status : 'out';
+    if (currentStatus !== 'in') {
+      alert('You are not currently IN. Use Enter first.');
+      updateButtonsForStatus('out');
       return;
     }
     const ref = db.ref("cafeteriaCount");
@@ -116,8 +116,8 @@ async function decrease() {
     if (result.committed) {
       const newCount = result.snapshot.val() || 0;
       await addHistory("Exited", newCount);
-      await deviceRef.update({ hasActed: true });
-      setButtonsEnabled(false);
+      await deviceRef.update({ status: 'out' });
+      updateButtonsForStatus('out');
     }
   } catch (e) {
     console.error('Decrease failed:', e);
@@ -158,6 +158,14 @@ if (typeof window !== 'undefined') {
         var history = snapshot.exists() ? snapshot.val() : [];
         renderHistory(history);
       });
+      // Device status listener to keep buttons in sync
+      try {
+        var devIdForListen = getOrCreateDeviceId();
+        db.ref('devices/' + devIdForListen).on('value', function(s) {
+          var st = s.exists() && s.val() && s.val().status ? s.val().status : 'out';
+          updateButtonsForStatus(st);
+        });
+      } catch(e) {}
     } catch (e) {
       // no-op
     }
@@ -195,6 +203,21 @@ function setButtonsEnabled(enabled) {
       btn.style.cursor = '';
     }
   });
+}
+
+function updateButtonsForStatus(status) {
+  var enterBtn = Array.prototype.find.call(document.querySelectorAll('button'), function(b){return b && b.textContent && b.textContent.toLowerCase().includes('enter');});
+  var exitBtn = Array.prototype.find.call(document.querySelectorAll('button'), function(b){return b && b.textContent && b.textContent.toLowerCase().includes('exit');});
+  if (enterBtn) {
+    enterBtn.disabled = (status === 'in');
+    enterBtn.style.opacity = enterBtn.disabled ? '0.6' : '';
+    enterBtn.style.cursor = enterBtn.disabled ? 'not-allowed' : '';
+  }
+  if (exitBtn) {
+    exitBtn.disabled = (status !== 'in');
+    exitBtn.style.opacity = exitBtn.disabled ? '0.6' : '';
+    exitBtn.style.cursor = exitBtn.disabled ? 'not-allowed' : '';
+  }
 }
 
 
