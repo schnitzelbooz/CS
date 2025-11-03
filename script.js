@@ -88,13 +88,7 @@ async function showData() {
   let count = await loadData();
   document.getElementById("output").innerText = "Current count: " + count;
   let history = await loadHistory();
-  let historyList = document.getElementById("history");
-  historyList.innerHTML = "";
-  history.forEach(entry => {
-    let li = document.createElement("li");
-    li.innerText = `${entry.time}: ${entry.action} → ${entry.count} people`;
-    historyList.appendChild(li);
-  });
+  renderHistory(history);
 }
 // ...existing code...
 
@@ -106,6 +100,15 @@ if (typeof window !== 'undefined') {
 
     // Realtime listeners to reflect updates immediately
     try {
+      // Show placeholders while initial async fetch runs
+      var outputEl = document.getElementById("output");
+      if (outputEl) outputEl.innerText = "Loading current count...";
+      var historyListEl = document.getElementById("history");
+      if (historyListEl) historyListEl.innerHTML = "<li>Loading history...</li>";
+
+      // Initial async render (shows current values before any button press)
+      showData().catch(function() {});
+
       db.ref("cafeteriaCount").on('value', function(snapshot) {
         var count = snapshot.exists() ? snapshot.val() : 0;
         var outputEl = document.getElementById("output");
@@ -113,18 +116,24 @@ if (typeof window !== 'undefined') {
       });
       db.ref("cafeteriaHistory").on('value', function(snapshot) {
         var history = snapshot.exists() ? snapshot.val() : [];
-        var historyList = document.getElementById("history");
-        if (!historyList) return;
-        historyList.innerHTML = "";
-        history.forEach(function(entry) {
-          var li = document.createElement("li");
-          li.innerText = `${entry.time}: ${entry.action} → ${entry.count} people`;
-          historyList.appendChild(li);
-        });
+        renderHistory(history);
       });
     } catch (e) {
       // no-op
     }
+  });
+}
+
+function renderHistory(history) {
+  var historyList = document.getElementById("history");
+  if (!historyList) return;
+  historyList.innerHTML = "";
+  var items = Array.isArray(history) ? history : (history && typeof history === 'object' ? Object.values(history) : []);
+  items.forEach(function(entry) {
+    if (!entry) return;
+    var li = document.createElement("li");
+    li.innerText = `${entry.time}: ${entry.action} → ${entry.count} people`;
+    historyList.appendChild(li);
   });
 }
 
