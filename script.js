@@ -158,7 +158,7 @@ if (typeof window !== 'undefined') {
         var history = snapshot.exists() ? snapshot.val() : [];
         renderHistory(history);
       });
-      // Device status listener to keep buttons in sync
+      // Device status listener to keep the single toggle button in sync
       try {
         var devIdForListen = getOrCreateDeviceId();
         db.ref('devices/' + devIdForListen).on('value', function(s) {
@@ -192,31 +192,32 @@ function renderHistory(history) {
 }
 
 function setButtonsEnabled(enabled) {
-  var buttons = document.querySelectorAll('button');
-  buttons.forEach(function(btn) {
-    btn.disabled = !enabled;
-    if (!enabled) {
-      btn.style.opacity = '0.6';
-      btn.style.cursor = 'not-allowed';
-    } else {
-      btn.style.opacity = '';
-      btn.style.cursor = '';
-    }
-  });
+  var btn = document.getElementById('toggleBtn');
+  if (!btn) return;
+  btn.disabled = !enabled;
+  btn.style.opacity = enabled ? '' : '0.6';
+  btn.style.cursor = enabled ? '' : 'not-allowed';
 }
 
+var currentDeviceStatus = 'out';
 function updateButtonsForStatus(status) {
-  var enterBtn = Array.prototype.find.call(document.querySelectorAll('button'), function(b){return b && b.textContent && b.textContent.toLowerCase().includes('enter');});
-  var exitBtn = Array.prototype.find.call(document.querySelectorAll('button'), function(b){return b && b.textContent && b.textContent.toLowerCase().includes('exit');});
-  if (enterBtn) {
-    enterBtn.disabled = (status === 'in');
-    enterBtn.style.opacity = enterBtn.disabled ? '0.6' : '';
-    enterBtn.style.cursor = enterBtn.disabled ? 'not-allowed' : '';
+  currentDeviceStatus = status || 'out';
+  var btn = document.getElementById('toggleBtn');
+  if (!btn) return;
+  if (currentDeviceStatus === 'in') {
+    btn.textContent = 'Exit';
+  } else {
+    btn.textContent = 'Enter';
   }
-  if (exitBtn) {
-    exitBtn.disabled = (status !== 'in');
-    exitBtn.style.opacity = exitBtn.disabled ? '0.6' : '';
-    exitBtn.style.cursor = exitBtn.disabled ? 'not-allowed' : '';
+  setButtonsEnabled(true);
+}
+
+async function toggle() {
+  // Route to increase/decrease based on current status
+  if (currentDeviceStatus === 'in') {
+    await decrease();
+  } else {
+    await increase();
   }
 }
 
