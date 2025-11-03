@@ -103,6 +103,28 @@ if (typeof window !== 'undefined') {
   window.addEventListener('load', function() {
     // Best-effort; errors will surface in console but won't block UI
     registerDevice().catch(function() {});
+
+    // Realtime listeners to reflect updates immediately
+    try {
+      db.ref("cafeteriaCount").on('value', function(snapshot) {
+        var count = snapshot.exists() ? snapshot.val() : 0;
+        var outputEl = document.getElementById("output");
+        if (outputEl) outputEl.innerText = "Current count: " + count;
+      });
+      db.ref("cafeteriaHistory").on('value', function(snapshot) {
+        var history = snapshot.exists() ? snapshot.val() : [];
+        var historyList = document.getElementById("history");
+        if (!historyList) return;
+        historyList.innerHTML = "";
+        history.forEach(function(entry) {
+          var li = document.createElement("li");
+          li.innerText = `${entry.time}: ${entry.action} → ${entry.count} people`;
+          historyList.appendChild(li);
+        });
+      });
+    } catch (e) {
+      // no-op
+    }
   });
 }
 
