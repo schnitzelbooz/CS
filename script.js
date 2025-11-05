@@ -135,6 +135,9 @@ async function showData() {
 // Register device on page load
 if (typeof window !== 'undefined') {
   window.addEventListener('load', function() {
+    // Set initial button state (default to enter/out)
+    updateButtonsForStatus('out');
+    
     // Best-effort; errors will surface in console but won't block UI
     registerDevice().catch(function() {});
 

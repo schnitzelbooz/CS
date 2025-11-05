@@ -13,22 +13,23 @@ button {
   color: white;
   cursor: pointer;
   transition: background-color 0.3s ease;
+  background-color: #4caf50; /* default green for enter */
 }
 
-button.enter-state {
-  background-color: #4caf50;
+#toggleBtn.enter-state {
+  background-color: #4caf50 !important;
 }
 
-button.enter-state:hover {
-  background-color: #45a049;
+#toggleBtn.enter-state:hover {
+  background-color: #45a049 !important;
 }
 
-button.exit-state {
-  background-color: #f44336;
+#toggleBtn.exit-state {
+  background-color: #f44336 !important;
 }
 
-button.exit-state:hover {
-  background-color: #da190b;
+#toggleBtn.exit-state:hover {
+  background-color: #da190b !important;
 }
 
 #output {
