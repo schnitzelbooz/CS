@@ -206,8 +206,10 @@ function updateButtonsForStatus(status) {
   if (!btn) return;
   if (currentDeviceStatus === 'in') {
     btn.textContent = 'Exit';
+    btn.className = 'exit-state';
   } else {
     btn.textContent = 'Enter';
+    btn.className = 'enter-state';
   }
   setButtonsEnabled(true);
 }

@@ -10,9 +10,25 @@ button {
   font-size: 16px;
   border-radius: 8px;
   border: none;
-  background-color: #af4c4c;
   color: white;
   cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+button.enter-state {
+  background-color: #4caf50;
+}
+
+button.enter-state:hover {
+  background-color: #45a049;
+}
+
+button.exit-state {
+  background-color: #f44336;
+}
+
+button.exit-state:hover {
+  background-color: #da190b;
 }
 
 #output {
