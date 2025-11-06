@@ -15,10 +15,7 @@ function setCookie(name, value, days) {
   const expires = `expires=${date.toUTCString()}`;
   const isHttps = location.protocol === 'https:';
   const secure = isHttps ? '; Secure' : '';
-  // Scope cookie to the registrable root domain so it remains the same across subdomains
-  const hostParts = location.hostname.split('.');
-  const rootDomain = hostParts.length >= 2 ? `.${hostParts.slice(-2).join('.')}` : location.hostname;
-  document.cookie = `${name}=${encodeURIComponent(value)}; ${expires}; path=/; domain=${rootDomain}; SameSite=Lax${secure}`;
+  document.cookie = `${name}=${encodeURIComponent(value)}; ${expires}; path=/; SameSite=Lax${secure}`;
 }
 
 function generateId() {
