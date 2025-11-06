@@ -5,7 +5,7 @@ var DEVICE_ID = null; // single stable ID per page lifecycle
 function getCookie(name) {
   const value = `; ${document.cookie}`;
   const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop().split(';').shift();
+  if (parts.length === 2) return decodeURIComponent(parts.pop().split(';').shift());
   return null;
 }
 
@@ -15,7 +15,10 @@ function setCookie(name, value, days) {
   const expires = `expires=${date.toUTCString()}`;
   const isHttps = location.protocol === 'https:';
   const secure = isHttps ? '; Secure' : '';
-  document.cookie = `${name}=${encodeURIComponent(value)}; ${expires}; path=/; SameSite=Lax${secure}`;
+  // Scope cookie to the registrable root domain so it remains the same across subdomains
+  const hostParts = location.hostname.split('.');
+  const rootDomain = hostParts.length >= 2 ? `.${hostParts.slice(-2).join('.')}` : location.hostname;
+  document.cookie = `${name}=${encodeURIComponent(value)}; ${expires}; path=/; domain=${rootDomain}; SameSite=Lax${secure}`;
 }
 
 function generateId() {
