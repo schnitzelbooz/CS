@@ -1,6 +1,7 @@
 
 // ...existing code...
 // Cookie helpers and device registration
+var DEVICE_ID = null; // single stable ID per page lifecycle
 function getCookie(name) {
   const value = `; ${document.cookie}`;
   const parts = value.split(`; ${name}=`);
@@ -12,7 +13,9 @@ function setCookie(name, value, days) {
   const date = new Date();
   date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
   const expires = `expires=${date.toUTCString()}`;
-  document.cookie = `${name}=${value}; ${expires}; path=/; SameSite=Lax`;
+  const isHttps = location.protocol === 'https:';
+  const secure = isHttps ? '; Secure' : '';
+  document.cookie = `${name}=${encodeURIComponent(value)}; ${expires}; path=/; SameSite=Lax${secure}`;
 }
 
 function generateId() {
@@ -37,7 +40,7 @@ function getOrCreateDeviceId() {
 }
 
 async function registerDevice() {
-  const deviceId = getOrCreateDeviceId();
+  const deviceId = DEVICE_ID || getOrCreateDeviceId();
   const deviceRef = db.ref('devices/' + deviceId);
   const now = new Date().toISOString();
   const snapshot = await deviceRef.get();
@@ -73,14 +76,14 @@ function saveHistory(history) {
 }
 async function addHistory(action, newCount) {
   const timestamp = new Date().toLocaleString();
-  const deviceId = getOrCreateDeviceId();
+  const deviceId = DEVICE_ID || getOrCreateDeviceId();
   const entry = { action: action, count: newCount, time: timestamp, deviceId: deviceId, ts: Date.now() };
   // append instead of overwriting entire array to avoid races
   await db.ref("cafeteriaHistory").push(entry);
 }
 async function increase() {
   try {
-    const deviceId = getOrCreateDeviceId();
+    const deviceId = DEVICE_ID || getOrCreateDeviceId();
     const deviceRef = db.ref('devices/' + deviceId);
     const devSnap = await deviceRef.get();
     var currentStatus = devSnap.exists() && devSnap.val() && devSnap.val().status ? devSnap.val().status : 'out';
@@ -106,7 +109,7 @@ async function increase() {
 }
 async function decrease() {
   try {
-    const deviceId = getOrCreateDeviceId();
+    const deviceId = DEVICE_ID || getOrCreateDeviceId();
     const deviceRef = db.ref('devices/' + deviceId);
     const devSnap = await deviceRef.get();
     var currentStatus = devSnap.exists() && devSnap.val() && devSnap.val().status ? devSnap.val().status : 'out';
@@ -142,6 +145,8 @@ async function showData() {
 // Register device on page load
 if (typeof window !== 'undefined') {
   window.addEventListener('load', function() {
+    // Initialize single DEVICE_ID early
+    try { DEVICE_ID = getOrCreateDeviceId(); } catch(e) { DEVICE_ID = null; }
     startClock();
     // Set initial button state (default to enter/out)
     updateButtonsForStatus('out');
@@ -171,7 +176,7 @@ if (typeof window !== 'undefined') {
       });
       // Device status listener to keep the single toggle button in sync
       try {
-        var devIdForListen = getOrCreateDeviceId();
+        var devIdForListen = DEVICE_ID || getOrCreateDeviceId();
         db.ref('devices/' + devIdForListen).on('value', function(s) {
           var st = s.exists() && s.val() && s.val().status ? s.val().status : 'out';
           updateButtonsForStatus(st);
