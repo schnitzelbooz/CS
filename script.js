@@ -21,11 +21,18 @@ function generateId() {
 }
 
 function getOrCreateDeviceId() {
+  // In-memory cache to ensure single value per page session
+  if (window.__deviceIdCache) return window.__deviceIdCache;
+
+  // Use cookie as the single source of truth
   let id = getCookie('deviceId');
   if (!id) {
     id = generateId();
     setCookie('deviceId', id, 3650); // ~10 years
   }
+
+  // Cache for this session
+  window.__deviceIdCache = id;
   return id;
 }
 
