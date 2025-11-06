@@ -85,11 +85,20 @@ async function increase() {
   try {
     const deviceId = DEVICE_ID || getOrCreateDeviceId();
     const deviceRef = db.ref('devices/' + deviceId);
+    // acquire per-device lock atomically
+    const lockRes = await deviceRef.child('lock').transaction(function(current){
+      if (current) return; // abort if already locked
+      return true;
+    });
+    if (!lockRes.committed) {
+      return; // another action in progress
+    }
     const devSnap = await deviceRef.get();
     var currentStatus = devSnap.exists() && devSnap.val() && devSnap.val().status ? devSnap.val().status : 'out';
     if (currentStatus === 'in') {
       alert('You are already IN. Use Exit instead.');
       updateButtonsForStatus('in');
+      await deviceRef.child('lock').set(null);
       return;
     }
     const ref = db.ref("cafeteriaCount");
@@ -102,6 +111,7 @@ async function increase() {
       await deviceRef.update({ status: 'in' });
       updateButtonsForStatus('in');
     }
+    await deviceRef.child('lock').set(null);
   } catch (e) {
     console.error('Increase failed:', e);
     alert('Failed to increase count. Check console for details.');
@@ -111,11 +121,20 @@ async function decrease() {
   try {
     const deviceId = DEVICE_ID || getOrCreateDeviceId();
     const deviceRef = db.ref('devices/' + deviceId);
+    // acquire per-device lock atomically
+    const lockRes = await deviceRef.child('lock').transaction(function(current){
+      if (current) return; // abort if already locked
+      return true;
+    });
+    if (!lockRes.committed) {
+      return; // another action in progress
+    }
     const devSnap = await deviceRef.get();
     var currentStatus = devSnap.exists() && devSnap.val() && devSnap.val().status ? devSnap.val().status : 'out';
     if (currentStatus !== 'in') {
       alert('You are not currently IN. Use Enter first.');
       updateButtonsForStatus('out');
+      await deviceRef.child('lock').set(null);
       return;
     }
     const ref = db.ref("cafeteriaCount");
@@ -129,6 +148,7 @@ async function decrease() {
       await deviceRef.update({ status: 'out' });
       updateButtonsForStatus('out');
     }
+    await deviceRef.child('lock').set(null);
   } catch (e) {
     console.error('Decrease failed:', e);
     alert('Failed to decrease count. Check console for details.');
@@ -226,6 +246,7 @@ function setButtonsEnabled(enabled) {
 }
 
 var currentDeviceStatus = 'out';
+var actionInProgress = false; // local guard to prevent rapid double clicks
 function updateButtonsForStatus(status) {
   currentDeviceStatus = status || 'out';
   var btn = document.getElementById('toggleBtn');
@@ -246,10 +267,18 @@ function updateButtonsForStatus(status) {
 
 async function toggle() {
   // Route to increase/decrease based on current status
-  if (currentDeviceStatus === 'in') {
-    await decrease();
-  } else {
-    await increase();
+  if (actionInProgress) return;
+  actionInProgress = true;
+  setButtonsEnabled(false);
+  try {
+    if (currentDeviceStatus === 'in') {
+      await decrease();
+    } else {
+      await increase();
+    }
+  } finally {
+    actionInProgress = false;
+    setButtonsEnabled(true);
   }
 }
 
