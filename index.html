@@ -21,14 +21,30 @@
 </script>
 </head>
 <body onload="showData()">
-  <h1>Cafeteria Monitor</h1>
-  <p id="output"></p>
-  
-  <button id="toggleBtn" onclick="toggle()">Loading...</button>
-  <!-- <button onclick="reset()">Reset</button> -->
+  <h1 id="clock">--:--:--</h1>
+  <h2>Cafeteria Monitor</h2>
 
-  <h2>History</h2>
-  <ul id="history"></ul>
+  <section class="card occupancy-card">
+    <p class="card-subtitle">Current occupancy</p>
+    <div id="output" class="big-count">0</div>
+    <p class="card-footnote">people in cafeteria</p>
+  </section>
+
+  <section class="card quick-card">
+    <p class="card-title">Quick access</p>
+    <button id="toggleBtn" class="enter-state lg" onclick="toggle()">Enter cafeteria</button>
+    <p id="statusText" class="status-text"></p>
+  </section>
+
+  <section class="card history-card">
+    <p class="card-title">Recent activity</p>
+    <table class="history-table">
+      <thead>
+        <tr><th>ID</th><th>Type</th><th>Time</th><th>Date</th></tr>
+      </thead>
+      <tbody id="historyBody"></tbody>
+    </table>
+  </section>
 
   <!-- <img src="lol.jpg" alt="Cafeteria Image" width="300">
   <img src="lol1.jpg" alt="Funny Image" width="300"> -->

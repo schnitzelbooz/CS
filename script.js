@@ -126,7 +126,7 @@ async function decrease() {
 }
 async function showData() {
   let count = await loadData();
-  document.getElementById("output").innerText = "Current count: " + count;
+  document.getElementById("output").innerText = count;
   let history = await loadHistory();
   renderHistory(history);
 }
@@ -135,6 +135,7 @@ async function showData() {
 // Register device on page load
 if (typeof window !== 'undefined') {
   window.addEventListener('load', function() {
+    startClock();
     // Set initial button state (default to enter/out)
     updateButtonsForStatus('out');
     
@@ -145,7 +146,7 @@ if (typeof window !== 'undefined') {
     try {
       // Show placeholders while initial async fetch runs
       var outputEl = document.getElementById("output");
-      if (outputEl) outputEl.innerText = "Loading current count...";
+      if (outputEl) outputEl.innerText = "--";
       var historyListEl = document.getElementById("history");
       if (historyListEl) historyListEl.innerHTML = "<li>Loading history...</li>";
 
@@ -155,7 +156,7 @@ if (typeof window !== 'undefined') {
       db.ref("cafeteriaCount").on('value', function(snapshot) {
         var count = snapshot.exists() ? snapshot.val() : 0;
         var outputEl = document.getElementById("output");
-        if (outputEl) outputEl.innerText = "Current count: " + count;
+        if (outputEl) outputEl.innerText = count;
       });
       db.ref("cafeteriaHistory").on('value', function(snapshot) {
         var history = snapshot.exists() ? snapshot.val() : [];
@@ -176,9 +177,9 @@ if (typeof window !== 'undefined') {
 }
 
 function renderHistory(history) {
-  var historyList = document.getElementById("history");
-  if (!historyList) return;
-  historyList.innerHTML = "";
+  var body = document.getElementById("historyBody");
+  if (!body) return;
+  body.innerHTML = "";
   var items = Array.isArray(history) ? history : (history && typeof history === 'object' ? Object.values(history) : []);
   // sort newest first using numeric ts; fallback keeps original order
   items.sort(function(a, b) {
@@ -186,11 +187,21 @@ function renderHistory(history) {
     var tb = b && typeof b.ts === 'number' ? b.ts : 0;
     return tb - ta;
   });
+  var idCounter = 1;
   items.forEach(function(entry) {
     if (!entry) return;
-    var li = document.createElement("li");
-    li.innerText = `${entry.time}: ${entry.action} → ${entry.count} people`;
-    historyList.appendChild(li);
+    var tr = document.createElement('tr');
+    var idTd = document.createElement('td');
+    idTd.textContent = `#${idCounter++}`;
+    var typeTd = document.createElement('td');
+    typeTd.textContent = (entry.action || '').toLowerCase();
+    var timeTd = document.createElement('td');
+    timeTd.textContent = entry.time || '';
+    var dateTd = document.createElement('td');
+    var d = entry.ts ? new Date(entry.ts) : null;
+    dateTd.textContent = d ? d.toLocaleDateString() : '';
+    tr.appendChild(idTd); tr.appendChild(typeTd); tr.appendChild(timeTd); tr.appendChild(dateTd);
+    body.appendChild(tr);
   });
 }
 
@@ -210,9 +221,13 @@ function updateButtonsForStatus(status) {
   if (currentDeviceStatus === 'in') {
     btn.textContent = 'Exit';
     btn.className = 'exit-state';
+    var s = document.getElementById('statusText');
+    if (s) s.textContent = 'You are currently inside the cafeteria';
   } else {
     btn.textContent = 'Enter';
     btn.className = 'enter-state';
+    var s2 = document.getElementById('statusText');
+    if (s2) s2.textContent = 'You are currently outside the cafeteria';
   }
   setButtonsEnabled(true);
 }
@@ -224,6 +239,18 @@ async function toggle() {
   } else {
     await increase();
   }
+}
+
+// Live clock
+function startClock() {
+  var el = document.getElementById('clock');
+  if (!el) return;
+  function tick() {
+    var now = new Date();
+    el.textContent = now.toLocaleTimeString([], { hour12: true });
+  }
+  tick();
+  setInterval(tick, 1000);
 }
 
 
