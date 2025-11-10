@@ -219,12 +219,11 @@ function renderHistory(history) {
     var tb = b && typeof b.ts === 'number' ? b.ts : 0;
     return tb - ta;
   });
-  var idCounter = 1;
   items.forEach(function(entry) {
     if (!entry) return;
     var tr = document.createElement('tr');
     var idTd = document.createElement('td');
-    idTd.textContent = `#${idCounter++}`;
+    idTd.textContent = formatId(entry.deviceId);
     var typeTd = document.createElement('td');
     typeTd.textContent = (entry.action || '').toLowerCase();
     var timeTd = document.createElement('td');
@@ -235,6 +234,13 @@ function renderHistory(history) {
     tr.appendChild(idTd); tr.appendChild(typeTd); tr.appendChild(timeTd); tr.appendChild(dateTd);
     body.appendChild(tr);
   });
+}
+
+function formatId(id) {
+  if (!id || typeof id !== 'string') return '-';
+  // keep it readable but unique enough at a glance
+  if (id.length <= 10) return id;
+  return '…' + id.slice(-8);
 }
 
 function setButtonsEnabled(enabled) {
