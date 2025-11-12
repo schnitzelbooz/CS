@@ -64,4 +64,4 @@ button {
 
 .history-table { width: 100%; border-collapse: collapse; background: #ffffff08; }
 .history-table thead th { text-align: left; padding: 10px 12px; opacity: 0.9; }
-.history-table tbody td { padding: 10px 12px; border-top: 1px solid #ffffff12; }
+.history-table tbody td { text-align: left; padding: 10px 12px; border-top: 1px solid #ffffff12; }
