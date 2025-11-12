@@ -227,8 +227,8 @@ function renderHistory(history) {
     var typeTd = document.createElement('td');
     typeTd.textContent = (entry.action || '').toLowerCase();
     var timeTd = document.createElement('td');
-    timeTd.textContent = entry.time || '';
-    var dateTd = document.createElement('td');
+    // timeTd.textContent = entry.time || '';
+    // var dateTd = document.createElement('td');
     var d = entry.ts ? new Date(entry.ts) : null;
     dateTd.textContent = d ? d.toLocaleDateString() : '';
     tr.appendChild(idTd); tr.appendChild(typeTd); tr.appendChild(timeTd); tr.appendChild(dateTd);
@@ -299,6 +299,3 @@ function startClock() {
   tick();
   setInterval(tick, 1000);
 }
-
-
-
