@@ -171,6 +171,9 @@ if (typeof window !== 'undefined') {
     // Set initial button state (default to enter/out)
     updateButtonsForStatus('out');
     
+    // Check if daily reset is needed on page load
+    checkDailyResetOnLoad().catch(function() {});
+    
     // Best-effort; errors will surface in console but won't block UI
     registerDevice().catch(function() {});
 
@@ -295,7 +298,51 @@ function startClock() {
   function tick() {
     var now = new Date();
     el.textContent = now.toLocaleTimeString([], { hour12: true });
+    // Check for midnight reset
+    if (now.getHours() === 0 && now.getMinutes() === 0 && now.getSeconds() === 0) {
+      checkAndResetDaily();
+    }
   }
   tick();
   setInterval(tick, 1000);
+}
+
+// Daily reset at midnight
+async function checkAndResetDaily() {
+  try {
+    var today = new Date().toDateString();
+    var lastResetRef = db.ref('lastDailyReset');
+    var lastResetSnap = await lastResetRef.get();
+    var lastResetDate = lastResetSnap.exists() ? lastResetSnap.val() : null;
+    
+    if (lastResetDate !== today) {
+      // Reset count to 0
+      await db.ref('cafeteriaCount').set(0);
+      // Update last reset date
+      await lastResetRef.set(today);
+      console.log('Daily reset completed at midnight');
+    }
+  } catch (e) {
+    console.error('Daily reset failed:', e);
+  }
+}
+
+// Check on page load if reset is needed
+async function checkDailyResetOnLoad() {
+  try {
+    var now = new Date();
+    var today = now.toDateString();
+    var lastResetRef = db.ref('lastDailyReset');
+    var lastResetSnap = await lastResetRef.get();
+    var lastResetDate = lastResetSnap.exists() ? lastResetSnap.val() : null;
+    
+    // If it's past midnight and hasn't been reset today, reset it
+    if (lastResetDate !== today && now.getHours() >= 0) {
+      await db.ref('cafeteriaCount').set(0);
+      await lastResetRef.set(today);
+      console.log('Daily reset completed on page load');
+    }
+  } catch (e) {
+    console.error('Daily reset check failed:', e);
+  }
 }
