@@ -1,7 +1,5 @@
 
-// ...existing code...
-// Cookie helpers and device registration
-var DEVICE_ID = null; // single stable ID per page lifecycle
+var DEVICE_ID = null; 
 function getCookie(name) {
   const value = `; ${document.cookie}`;
   const parts = value.split(`; ${name}=`);
@@ -24,17 +22,13 @@ function generateId() {
 }
 
 function getOrCreateDeviceId() {
-  // In-memory cache to ensure single value per page session
   if (window.__deviceIdCache) return window.__deviceIdCache;
-
-  // Use cookie as the single source of truth
   let id = getCookie('deviceId');
   if (!id) {
     id = generateId();
     setCookie('deviceId', id, 3650); // ~10 years
   }
 
-  // Cache for this session
   window.__deviceIdCache = id;
   return id;
 }
@@ -64,28 +58,20 @@ async function loadData() {
   const snapshot = await db.ref("cafeteriaCount").get();
   return snapshot.exists() ? snapshot.val() : 0;
 }
-function saveData(count) {
-  return db.ref("cafeteriaCount").set(count);
-}
 async function loadHistory() {
   const snapshot = await db.ref("cafeteriaHistory").get();
   return snapshot.exists() ? snapshot.val() : [];
-}
-function saveHistory(history) {
-  return db.ref("cafeteriaHistory").set(history);
 }
 async function addHistory(action, newCount) {
   const timestamp = new Date().toLocaleString();
   const deviceId = DEVICE_ID || getOrCreateDeviceId();
   const entry = { action: action, count: newCount, time: timestamp, deviceId: deviceId, ts: Date.now() };
-  // append instead of overwriting entire array to avoid races
   await db.ref("cafeteriaHistory").push(entry);
 }
 async function increase() {
   try {
     const deviceId = DEVICE_ID || getOrCreateDeviceId();
     const deviceRef = db.ref('devices/' + deviceId);
-    // acquire per-device lock atomically
     const lockRes = await deviceRef.child('lock').transaction(function(current){
       if (current) return; // abort if already locked
       return true;
@@ -162,30 +148,20 @@ async function showData() {
 }
 // ...existing code...
 
-// Register device on page load
 if (typeof window !== 'undefined') {
   window.addEventListener('load', function() {
-    // Initialize single DEVICE_ID early
     try { DEVICE_ID = getOrCreateDeviceId(); } catch(e) { DEVICE_ID = null; }
     startClock();
-    // Set initial button state (default to enter/out)
     updateButtonsForStatus('out');
     
-    // Check if daily reset is needed on page load
     checkDailyResetOnLoad().catch(function() {});
     
-    // Best-effort; errors will surface in console but won't block UI
     registerDevice().catch(function() {});
 
-    // Realtime listeners to reflect updates immediately
     try {
-      // Show placeholders while initial async fetch runs
       var outputEl = document.getElementById("output");
       if (outputEl) outputEl.innerText = "--";
-      var historyListEl = document.getElementById("history");
-      if (historyListEl) historyListEl.innerHTML = "<li>Loading history...</li>";
 
-      // Initial async render (shows current values before any button press)
       showData().catch(function() {});
 
       db.ref("cafeteriaCount").on('value', function(snapshot) {
@@ -197,7 +173,6 @@ if (typeof window !== 'undefined') {
         var history = snapshot.exists() ? snapshot.val() : [];
         renderHistory(history);
       });
-      // Device status listener to keep the single toggle button in sync
       try {
         var devIdForListen = DEVICE_ID || getOrCreateDeviceId();
         db.ref('devices/' + devIdForListen).on('value', function(s) {
@@ -206,7 +181,6 @@ if (typeof window !== 'undefined') {
         });
       } catch(e) {}
     } catch (e) {
-      // no-op
     }
   });
 }
@@ -216,12 +190,12 @@ function renderHistory(history) {
   if (!body) return;
   body.innerHTML = "";
   var items = Array.isArray(history) ? history : (history && typeof history === 'object' ? Object.values(history) : []);
-  // sort newest first using numeric ts; fallback keeps original order
   items.sort(function(a, b) {
     var ta = a && typeof a.ts === 'number' ? a.ts : 0;
     var tb = b && typeof b.ts === 'number' ? b.ts : 0;
     return tb - ta;
   });
+  
   items.forEach(function(entry) {
     if (!entry) return;
     var tr = document.createElement('tr');
@@ -231,17 +205,13 @@ function renderHistory(history) {
     typeTd.textContent = (entry.action || '').toLowerCase();
     var timeTd = document.createElement('td');
     timeTd.textContent = entry.time || '';
-    // var dateTd = document.createElement('td');
-    // var d = entry.ts ? new Date(entry.ts) : null;
-    // dateTd.textContent = d ? d.toLocaleDateString() : '';
-    tr.appendChild(idTd); tr.appendChild(typeTd); tr.appendChild(timeTd); //tr.appendChild(dateTd);
+    tr.appendChild(idTd); tr.appendChild(typeTd); tr.appendChild(timeTd);
     body.appendChild(tr);
   });
 }
 
 function formatId(id) {
   if (!id || typeof id !== 'string') return '-';
-  // keep it readable but unique enough at a glance
   if (id.length <= 10) return id;
   return '…' + id.slice(-8);
 }
@@ -255,7 +225,7 @@ function setButtonsEnabled(enabled) {
 }
 
 var currentDeviceStatus = 'out';
-var actionInProgress = false; // local guard to prevent rapid double clicks
+var actionInProgress = false;
 function updateButtonsForStatus(status) {
   currentDeviceStatus = status || 'out';
   var btn = document.getElementById('toggleBtn');
